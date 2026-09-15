@@ -1,0 +1,89 @@
+#!/bin/bash
+
+set -euxo pipefail
+
+
+# ========================================================
+# 1. Docker / SSM 시작
+#
+# Docker + Compose는 Custom AMI에 이미 설치됨
+# ========================================================
+
+systemctl enable --now docker
+systemctl enable --now amazon-ssm-agent || true
+
+
+# ========================================================
+# 2. AWS CLI v2 설치
+# ========================================================
+
+if ! command -v aws >/dev/null 2>&1; then
+
+  dnf install -y unzip
+
+  mkdir -p /tmp/awscli-install
+  cd /tmp/awscli-install
+
+  curl -fsSL \
+    "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" \
+    -o awscliv2.zip
+
+  unzip -q awscliv2.zip
+
+  ./aws/install
+
+  rm -rf /tmp/awscli-install
+fi
+
+
+# ========================================================
+# 3. 디렉토리 생성
+# ========================================================
+
+mkdir -p /nginx/html
+mkdir -p /opt/app
+
+
+# ========================================================
+# 4. 최신 HTML 가져오기
+#
+# 최초 GitHub Actions 실행 전이면 html이 없을 수 있으므로
+# EC2 부팅 자체는 실패시키지 않음
+# ========================================================
+
+aws s3 sync \
+  s3://${website_bucket}/html/ \
+  /nginx/html/ \
+  --delete || true
+
+
+# ========================================================
+# 5. docker-compose.yaml이 이미 S3에 있다면
+#    컨테이너까지 자동 실행
+# ========================================================
+
+if aws s3 cp \
+  s3://${website_bucket}/docker-compose.yaml \
+  /opt/app/docker-compose.yaml
+then
+
+  # ECR 로그인
+  aws ecr get-login-password \
+    --region ${region} \
+    | docker login \
+        --username AWS \
+        --password-stdin \
+        ${ecr_registry}
+
+  cd /opt/app
+
+  docker compose pull
+
+  docker compose up -d --remove-orphans
+
+else
+
+  echo "docker-compose.yaml is not uploaded yet."
+  echo "The first GitHub Actions deployment will start the containers."
+
+fi

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+set -euxo pipefail
+
+# User Data 로그 저장
+exec > >(tee -a /var/log/ami-builder.log | logger -t user-data -s 2>/dev/console) 2>&1
+
+
+# ========================================================
+# 1. Docker 설치
+# ========================================================
+
+dnf install -y docker
+
+
+# ========================================================
+# 2. Docker Compose Plugin 설치
+# ========================================================
+
+DOCKER_PLUGIN_DIR="/usr/libexec/docker/cli-plugins"
+
+mkdir -p "$DOCKER_PLUGIN_DIR"
+
+curl -fsSL \
+  https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+  -o "$DOCKER_PLUGIN_DIR/docker-compose"
+
+chmod +x "$DOCKER_PLUGIN_DIR/docker-compose"
+
+
+# ========================================================
+# 3. Docker 시작 및 자동 시작
+# ========================================================
+
+systemctl enable --now docker
+
+
+# ========================================================
+# 4. ec2-user Docker 그룹 추가
+# ========================================================
+
+usermod -aG docker ec2-user
+
+
+# ========================================================
+# 5. SSM Agent
+# ========================================================
+
+systemctl enable --now amazon-ssm-agent || true
+
+
+# ========================================================
+# 6. 설치 확인
+# ========================================================
+
+docker --version
+docker compose version
+systemctl is-active docker
+
+
+# ========================================================
+# 7. AMI 생성 준비 완료 표시
+# ========================================================
+
+touch /var/tmp/docker-ami-ready

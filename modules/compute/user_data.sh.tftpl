@@ -1,0 +1,148 @@
+#!/bin/bash
+# User Data는 root로 실행되므로 sudo가 필요 없습니다.
+set -e
+export DEBIAN_FRONTEND=noninteractive
+
+# 1. 수업에서 사용한 기본 패키지 설치
+apt update
+apt install -y \
+  unzip \
+  curl \
+  ca-certificates \
+  nfs-common
+
+# 2. AWS CLI 설치
+mkdir -p /tmp/lab-install
+cd /tmp/lab-install
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+unzip -q awscliv2.zip
+./aws/install
+rm -rf aws awscliv2.zip
+
+# 3. 수업에서 사용한 Docker 설치 스크립트 실행 (Compose 포함)
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh ./get-docker.sh
+systemctl enable --now docker
+rm -f get-docker.sh
+
+# 4. 실제 SSH 로그인 사용자인 ubuntu에게 Docker 사용 권한 부여
+# User Data에서 $USER를 사용하면 root가 될 수 있으므로 ubuntu로 지정합니다.
+usermod -aG docker ubuntu
+
+# 5. 설치 확인
+aws --version
+docker version
+docker compose version
+curl --version
+unzip -v
+
+#!/bin/bash
+
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+
+echo "===== User Data Start ====="
+
+# ============================================================
+# 1. 기본 패키지
+# ============================================================
+
+apt-get update
+
+apt-get install -y \
+  unzip \
+  curl \
+  ca-certificates \
+  nfs-common
+
+
+# ============================================================
+# 2. AWS CLI
+# ============================================================
+
+mkdir -p /tmp/lab-install
+cd /tmp/lab-install
+
+curl \
+  --retry 3 \
+  --connect-timeout 10 \
+  --max-time 120 \
+  -fsSL \
+  "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" \
+  -o awscliv2.zip
+
+unzip -q awscliv2.zip
+
+./aws/install --update
+
+rm -rf aws awscliv2.zip
+
+
+# ============================================================
+# 3. Docker + Docker Compose
+# ============================================================
+
+curl \
+  --retry 3 \
+  --connect-timeout 10 \
+  --max-time 120 \
+  -fsSL \
+  https://get.docker.com \
+  -o get-docker.sh
+
+sh get-docker.sh
+
+systemctl enable --now docker
+
+rm -f get-docker.sh
+
+
+# ============================================================
+# 4. ubuntu 사용자 Docker 권한
+# ============================================================
+
+usermod -aG docker ubuntu
+
+
+# ============================================================
+# 5. 설치 확인
+# ============================================================
+
+aws --version
+docker --version
+docker compose version
+
+
+# ============================================================
+# 6. EFS 자동 마운트 설정
+#
+# 여기서 직접 mount 하지 않는다.
+# /mnt/efs에 실제 접근할 때 systemd가 자동으로 mount한다.
+# ============================================================
+
+mkdir -p /mnt/efs
+
+EFS_LINE='${efs_dns_name}:/ /mnt/efs nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev,nofail,x-systemd.automount 0 0'
+
+if ! grep -q '${efs_dns_name}:/' /etc/fstab; then
+  echo "$EFS_LINE" >> /etc/fstab
+fi
+
+# 새 fstab 내용을 systemd가 다시 읽도록 함
+systemctl daemon-reload
+
+# 실제 EFS mount는 하지 않고 automount unit만 준비
+if systemctl start mnt-efs.automount; then
+  echo "EFS automount configured"
+else
+  echo "EFS automount unit could not be started"
+fi
+
+
+# ============================================================
+# 7. 완료
+# ============================================================
+
+echo "setup complete" > /var/log/lab-setup.done
+
+echo "===== User Data Complete ====="
