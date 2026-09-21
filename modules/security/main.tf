@@ -94,53 +94,63 @@ resource "aws_security_group_rule" "efs_nfs" {
 }
 
 # External ALB -> EKS Node
-resource "aws_security_group_rule" "node_from_alb" {
-  for_each = local.web_ports
+# resource "aws_security_group_rule" "node_from_alb" {
+#   for_each = local.web_ports
 
-  type                     = "ingress"
-  from_port                = tonumber(each.key)
-  to_port                  = tonumber(each.key)
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.this["eks-node"].id
-  source_security_group_id = aws_security_group.this["external-alb"].id
-}
+#   type                     = "ingress"
+#   from_port                = tonumber(each.key)
+#   to_port                  = tonumber(each.key)
+#   protocol                 = "tcp"
+#   security_group_id        = aws_security_group.this["eks-node"].id
+#   source_security_group_id = aws_security_group.this["external-alb"].id
+# }
 
-# EKS Cluster -> Node: kubelet
-resource "aws_security_group_rule" "node_from_cluster" {
-  type                     = "ingress"
-  from_port                = 10250
-  to_port                  = 10250
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.this["eks-node"].id
-  source_security_group_id = aws_security_group.this["cluster"].id
-}
+# # EKS Cluster -> Node: kubelet
+# resource "aws_security_group_rule" "node_from_cluster" {
+#   type                     = "ingress"
+#   from_port                = 10250
+#   to_port                  = 10250
+#   protocol                 = "tcp"
+#   security_group_id        = aws_security_group.this["eks-node"].id
+#   source_security_group_id = aws_security_group.this["cluster"].id
+# }
 
-# 같은 Node SG를 사용하는 노드끼리 전체 통신
-resource "aws_security_group_rule" "node_self" {
-  type              = "ingress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  self              = true
-  security_group_id = aws_security_group.this["eks-node"].id
-}
+# # EKS Cluster -> Node: AWS Load Balancer Controller Webhook
+# resource "aws_security_group_rule" "node_from_cluster_alb_webhook" {
+#   type                     = "ingress"
+#   from_port                = local.alb_controller_webhook_port
+#   to_port                  = local.alb_controller_webhook_port
+#   protocol                 = "tcp"
+#   source_security_group_id = aws_security_group.this["cluster"].id
+#   security_group_id        = aws_security_group.this["eks-node"].id
+# }
+
+# # 같은 Node SG를 사용하는 노드끼리 전체 통신
+# resource "aws_security_group_rule" "node_self" {
+#   type              = "ingress"
+#   from_port         = 0
+#   to_port           = 0
+#   protocol          = "-1"
+#   self              = true
+#   security_group_id = aws_security_group.this["eks-node"].id
+# }
 
 # EKS Node -> Cluster: Kubernetes API
-resource "aws_security_group_rule" "cluster_from_node" {
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.this["cluster"].id
-  source_security_group_id = aws_security_group.this["eks-node"].id
-}
+# resource "aws_security_group_rule" "cluster_from_node" {
+#   type                     = "ingress"
+#   from_port                = 443
+#   to_port                  = 443
+#   protocol                 = "tcp"
+#   security_group_id        = aws_security_group.this["cluster"].id
+#   source_security_group_id = aws_security_group.this["eks-node"].id
+# }
 
-# PDF의 외부 API 접근 규칙
-resource "aws_security_group_rule" "cluster_https" {
-  type              = "ingress"
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.this["cluster"].id
-}
+# # PDF의 외부 API 접근 규칙
+# resource "aws_security_group_rule" "cluster_https" {
+#   type              = "ingress"
+#   from_port         = 443
+#   to_port           = 443
+#   protocol          = "tcp"
+#   cidr_blocks       = ["0.0.0.0/0"]
+#   security_group_id = aws_security_group.this["cluster"].id
+# }

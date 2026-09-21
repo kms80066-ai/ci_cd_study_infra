@@ -77,6 +77,15 @@ locals {
   eks_node_instance_type = "t3.small"
 
   eks_node_min_size     = 1
-  eks_node_desired_size = 1
-  eks_node_max_size     = 2
+  eks_node_desired_size = 2
+  eks_node_max_size     = 3
+  # ========================================================
+  # EKS - ALB Backend Security Group
+  # ========================================================
+
+  eks_cluster_security_group_id = module.eks.cluster_security_group_id
+
+  nginx_alb_security_group_id = module.security.external_alb_sg_id
+
+  nginx_backend_port = 80
 }

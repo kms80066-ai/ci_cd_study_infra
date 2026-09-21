@@ -10,9 +10,7 @@ locals {
     "external-alb",
     "internal-alb",
     "endpoint",
-    "efs",
-    "cluster",
-    "eks-node"
+    "efs"
   ])
 
   web_ports         = toset(["80", "443"])

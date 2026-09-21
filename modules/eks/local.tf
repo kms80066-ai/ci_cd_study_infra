@@ -9,8 +9,6 @@ locals {
   cluster_subnet_ids = var.cluster_subnet_ids
   node_subnet_ids    = var.node_subnet_ids
 
-  cluster_security_group_id = var.cluster_security_group_id
-  node_security_group_id    = var.node_security_group_id
 
   node_instance_type = var.node_instance_type
 

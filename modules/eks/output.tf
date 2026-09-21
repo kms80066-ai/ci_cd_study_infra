@@ -25,3 +25,8 @@ output "node_role_arn" {
 output "cluster_role_arn" {
   value = aws_iam_role.cluster.arn
 }
+
+# EKS가 자동 생성한 기본 Cluster Security Group
+output "cluster_security_group_id" {
+  value = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+}

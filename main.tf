@@ -144,8 +144,6 @@ module "eks" {
   # Worker Node도 Cluster Subnet에 생성
   node_subnet_ids = module.network.cluster_subnet_ids
 
-  cluster_security_group_id = module.security.cluster_sg_id
-  node_security_group_id    = module.security.eks_node_sg_id
 
   node_instance_type = local.eks_node_instance_type
 

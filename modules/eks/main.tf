@@ -12,19 +12,10 @@ resource "aws_eks_cluster" "this" {
   # ======================================================
 
   vpc_config {
-    # EKS Control Plane ENI용 Cluster Subnet
     subnet_ids = local.cluster_subnet_ids
 
-    # 기존 Security Module의 cluster-sg 사용
-    security_group_ids = [
-      local.cluster_security_group_id
-    ]
-
-    # 내부에서도 API 접근 가능
     endpoint_private_access = true
-
-    # 학습 환경에서 Local PC의 kubectl 접근을 위해 활성화
-    endpoint_public_access = true
+    endpoint_public_access  = true
   }
 
 
@@ -66,25 +57,13 @@ resource "aws_eks_cluster" "this" {
 resource "aws_launch_template" "node" {
   name_prefix = "${local.node_launch_template_name}-"
 
-  # 기존 Security Module에서 만든 Worker Node SG
-  vpc_security_group_ids = [
-    local.node_security_group_id
-  ]
-
-
-  # ======================================================
-  # IMDSv2
-  # ======================================================
+  # Security Group을 직접 지정하지 않음.
+  # EKS Managed Node Group이 기본 Cluster SG를 자동 부착한다.
 
   metadata_options {
     http_endpoint = "enabled"
     http_tokens   = "required"
   }
-
-
-  # ======================================================
-  # Instance Tag
-  # ======================================================
 
   tag_specifications {
     resource_type = "instance"
@@ -93,7 +72,6 @@ resource "aws_launch_template" "node" {
       Name = "${local.node_group_name}-instance"
     }
   }
-
 
   tag_specifications {
     resource_type = "volume"

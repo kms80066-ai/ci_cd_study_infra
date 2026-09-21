@@ -78,10 +78,10 @@ resource "aws_autoscaling_group" "this" {
   health_check_type         = "EC2"
   health_check_grace_period = 300
   lifecycle {
-  ignore_changes = [
-    desired_capacity
-  ]
-}
+    ignore_changes = [
+      desired_capacity
+    ]
+  }
   launch_template {
     id      = aws_launch_template.this.id
     version = "$Latest"

@@ -14,13 +14,7 @@ variable "node_subnet_ids" {
   type = list(string)
 }
 
-variable "cluster_security_group_id" {
-  type = string
-}
 
-variable "node_security_group_id" {
-  type = string
-}
 
 variable "node_instance_type" {
   type = string
