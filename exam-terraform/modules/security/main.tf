@@ -18,7 +18,7 @@ resource "aws_security_group" "this" {
 # Internet -> ALB: 현재 HTTP Listener는 80만 설정.
 # HTTPS 443 인바운드는 나중에 인증서/443 Listener 연결용.
 resource "aws_vpc_security_group_ingress_rule" "alb_web" {
-  for_each          = local.web_ports
+  for_each = { for port in local.web_ports : tostring(port) => port }
   security_group_id = aws_security_group.this["alb"].id
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
@@ -28,7 +28,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_web" {
 
 # ALB -> ASG EC2: HTTP/HTTPS. ALB 이외에서는 직접 웹 접속 차단.
 resource "aws_vpc_security_group_ingress_rule" "web_from_alb" {
-  for_each                     = local.web_ports
+  for_each = { for port in local.web_ports : tostring(port) => port }
   security_group_id            = aws_security_group.this["web"].id
   referenced_security_group_id = aws_security_group.this["alb"].id
   ip_protocol                  = "tcp"
@@ -47,7 +47,7 @@ resource "aws_vpc_security_group_ingress_rule" "jumpbox_ssh" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "jumpbox_web" {
-  for_each          = local.web_ports
+  for_each = { for port in local.web_ports : tostring(port) => port }
   security_group_id = aws_security_group.this["jumpbox"].id
   cidr_ipv4         = local.vpc_cidr
   ip_protocol       = "tcp"
@@ -75,7 +75,7 @@ resource "aws_vpc_security_group_ingress_rule" "node_from_jumpbox_ssh" {
 
 # EKS 노드 HTTP/HTTPS: VPC 내 접근만 허용 (아직 EKS용 ALB/Ingress 미배포)
 resource "aws_vpc_security_group_ingress_rule" "eks_node_web" {
-  for_each          = local.web_ports
+  for_each = { for port in local.web_ports : tostring(port) => port }
   security_group_id = aws_security_group.this["eks-node"].id
   cidr_ipv4         = local.vpc_cidr
   ip_protocol       = "tcp"
