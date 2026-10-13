@@ -63,6 +63,46 @@ resource "aws_eks_cluster" "this" {
   tags       = { Name = local.cluster_name }
 }
 
+# 기존 노드그룹에는 Launch Template이 없었음.
+# 노드 인스턴스 이름과 EKS 노드용 SG를 명시하려면 새 Template 필요.
+# EKS가 기본 cluster SG를 자동 부착하지 않으므로 직접 포함!
+resource "aws_launch_template" "node" {
+  name_prefix = "${local.name_prefix}-eks-worker-lt-"
+  key_name    = local.key_name
+
+  vpc_security_group_ids = [
+    aws_eks_cluster.this.vpc_config[0].cluster_security_group_id,
+    local.node_sg_id
+  ]
+
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "${local.name_prefix}-eks-worker-node"
+      Role = "eks-worker"
+    }
+  }
+
+  tag_specifications {
+    resource_type = "volume"
+    tags = { Name = "${local.name_prefix}-eks-worker-volume" }
+  }
+}
+
+# Control plane -> Worker Node kubelet (기존 실습의 10250 규칙)
+resource "aws_vpc_security_group_ingress_rule" "node_from_cluster_kubelet" {
+  security_group_id            = local.node_sg_id
+  referenced_security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+  ip_protocol                  = "tcp"
+  from_port                    = 10250
+  to_port                      = 10250
+}
+
 resource "aws_eks_node_group" "this" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "${local.name_prefix}-eks-nodes"
@@ -81,6 +121,11 @@ resource "aws_eks_node_group" "this" {
 
   update_config {
     max_unavailable = 1
+  }
+
+  launch_template {
+    id      = aws_launch_template.node.id
+    version = tostring(aws_launch_template.node.latest_version)
   }
 
   depends_on = [aws_iam_role_policy_attachment.node]

@@ -10,6 +10,8 @@ module "security" {
   source      = "./modules/security"
   name_prefix = local.tag_header
   vpc_id      = module.network.vpc_id
+  vpc_cidr    = local.vpc_cidr
+  ssh_allowed_cidr = local.ssh_allowed_cidr
 }
 
 module "web" {
@@ -20,6 +22,7 @@ module "web" {
   private_subnet_ids = module.network.private_subnet_ids
   alb_sg_id          = module.security.alb_sg_id
   web_sg_id          = module.security.web_sg_id
+  key_name           = local.key_name
   instance_type      = local.web_instance_type
   volume_size        = local.web_volume_size
   min_size           = local.web_min_size
@@ -36,6 +39,7 @@ module "rds" {
   instance_class     = local.db_instance_class
   db_name            = local.db_name
   db_username        = local.db_username
+  multi_az           = local.db_multi_az
 }
 
 module "eks" {
@@ -43,6 +47,8 @@ module "eks" {
   name_prefix        = local.tag_header
   cluster_name       = local.eks_cluster_name
   cluster_subnet_ids = module.network.cluster_subnet_ids
+  node_sg_id         = module.security.eks_node_sg_id
+  key_name           = local.key_name
   node_instance_type = local.eks_node_type
   min_size           = local.eks_node_min
   desired_size       = local.eks_node_desired
@@ -50,14 +56,13 @@ module "eks" {
   depends_on         = [module.network]
 }
 
-# 10.13 Notion 4번 항목 중 CloudWatch 기본 대시보드/알람
-# Grafana는 인증/사용 방식 미지정으로 여기서는 생성하지 않음
-module "monitoring" {
-  source             = "./modules/monitoring"
+# 별도의 Public Jumpbox (AL2023 + SSM + SSH Key)
+module "jumpbox" {
+  source             = "./modules/jumpbox"
   name_prefix        = local.tag_header
-  region             = local.region
-  asg_name           = module.web.asg_name
-  alb_arn_suffix     = module.web.alb_arn_suffix
-  rds_identifier     = module.rds.db_identifier
+  public_subnet_id   = module.network.subnet_ids["public_a"]
+  sg_id              = module.security.jumpbox_sg_id
+  key_name           = local.key_name
+  instance_type      = local.jumpbox_instance_type
+  volume_size        = local.jumpbox_volume_size
 }
-

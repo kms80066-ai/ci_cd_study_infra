@@ -5,5 +5,6 @@ locals {
   instance_class     = var.instance_class
   db_name            = var.db_name
   db_username        = var.db_username
+  multi_az           = var.multi_az
 }
 

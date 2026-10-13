@@ -18,7 +18,7 @@ resource "aws_db_instance" "mysql" {
   db_subnet_group_name   = aws_db_subnet_group.mysql.name
   vpc_security_group_ids = [local.db_sg_id]
   publicly_accessible   = false
-  multi_az              = false
+  multi_az              = local.multi_az
 
   # 실습용: destroy 가능, 백업 보존 안 함
   backup_retention_period = 0

@@ -28,7 +28,12 @@ output "eks_cluster_name" {
   value = module.eks.cluster_name
 }
 
-output "cloudwatch_dashboard" {
-  value = module.monitoring.dashboard_name
+output "jumpbox_public_ip" {
+  value = module.jumpbox.public_ip
 }
-
+output "jumpbox_public_dns" {
+  value = module.jumpbox.public_dns
+}
+output "eks_node_group_name" {
+  value = module.eks.node_group_name
+}

@@ -31,6 +31,7 @@ resource "aws_launch_template" "nginx" {
   name_prefix            = "${local.name_prefix}-nginx-lt-"
   image_id               = data.aws_ssm_parameter.al2023.value
   instance_type          = local.instance_type
+  key_name               = local.key_name
   vpc_security_group_ids = [local.web_sg_id]
   update_default_version = true
   user_data              = base64encode(templatefile("${path.module}/user_data.sh.tftpl", {}))
@@ -56,7 +57,7 @@ resource "aws_launch_template" "nginx" {
 
   tag_specifications {
     resource_type = "instance"
-    tags          = { Name = "${local.name_prefix}-nginx-node" }
+    tags          = { Name = "${local.name_prefix}-nginx-asg-ec2" }
   }
   tag_specifications {
     resource_type = "volume"
@@ -121,7 +122,7 @@ resource "aws_autoscaling_group" "nginx" {
 
   tag {
     key                 = "Name"
-    value               = "${local.name_prefix}-nginx-node"
+    value               = "${local.name_prefix}-nginx-asg-ec2"
     propagate_at_launch = true
   }
 

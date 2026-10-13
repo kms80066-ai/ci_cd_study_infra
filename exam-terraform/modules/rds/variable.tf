@@ -5,3 +5,4 @@ variable "instance_class" { type = string }
 variable "db_name" { type = string }
 variable "db_username" { type = string }
 
+variable "multi_az" { type = bool }

@@ -1,4 +1,5 @@
-output "alb_sg_id" { value = aws_security_group.this["alb"].id }
-output "web_sg_id" { value = aws_security_group.this["web"].id }
-output "db_sg_id"  { value = aws_security_group.this["db"].id }
-
+output "alb_sg_id"      { value = aws_security_group.this["alb"].id }
+output "web_sg_id"      { value = aws_security_group.this["web"].id }
+output "db_sg_id"       { value = aws_security_group.this["db"].id }
+output "jumpbox_sg_id"  { value = aws_security_group.this["jumpbox"].id }
+output "eks_node_sg_id" { value = aws_security_group.this["eks-node"].id }
