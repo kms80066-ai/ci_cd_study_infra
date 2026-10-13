@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euxo pipefail
+
+# Amazon Linux 2023: Docker 설치 후 부팅 시 자동 실행
+dnf install -y docker
+systemctl enable --now docker
+
+# 실습 범위: nginx 컨테이너 한 개. FastAPI 없음.
+docker pull nginx:stable-alpine
+docker run -d --name nginx --restart unless-stopped -p 80:80 nginx:stable-alpine
+
